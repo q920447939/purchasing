@@ -28,4 +28,5 @@ class SpiderCoreItem(scrapy.Item):
     version = scrapy.Field()  # 版本号 初始值为1 a
     area = scrapy.Field()  # 去的范围  a
     mark = scrapy.Field()  # 备用字段
+    detail_url = scrapy.Field()  # 详细url
     pass

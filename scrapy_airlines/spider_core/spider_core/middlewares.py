@@ -5,7 +5,14 @@
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
+from fake_useragent import UserAgent
 from scrapy import signals
+import scrapy
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+
+from scrapy.http import HtmlResponse, Response
 
 
 class SpiderCoreSpiderMiddleware(object):
@@ -56,6 +63,9 @@ class SpiderCoreSpiderMiddleware(object):
         spider.logger.info('Spider opened: %s' % spider.name)
 
 
+from spider_core.spiders import ChunqiuSpider
+
+
 class SpiderCoreDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the downloader middleware does not modify the
@@ -78,7 +88,36 @@ class SpiderCoreDownloaderMiddleware(object):
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        return None
+        ua = UserAgent()
+        request.headers['User-Agent'] = ua.random
+
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')  # 使用无头谷歌浏览器模式
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--no-sandbox')
+        # 指定谷歌浏览器路径
+        self.driver = webdriver.Chrome(chrome_options=chrome_options,
+                                       executable_path='D://BDCloundDown//chromedriver')
+        print("request.url:", request.url)
+        print("request.method:", request.method)
+        if request.method != 'POST':
+            self.driver.get(request.url)
+            time.sleep(1)
+            html = self.driver.page_source
+            self.driver.quit()
+            return scrapy.http.HtmlResponse(url=request.url, body=html.encode('utf-8'), encoding='utf-8',
+                                            request=request)
+        from_data = {
+            'UserNameInput': 'LarvwuAX3KTyBFXtXkCcjcFRLzpSb/Ft6P1r29CxZcOlpn9Le8Q+LCQ3iTeXnW2ZdCKJsmA0tOyn4wF4C92vjs1Tg11lGxaroeAgGmSgZvBqyLQha2UNOM/MDHMroF1m9W5j92oe2jg2QPS4rTsCVRsnMcZCCd3y2iY/2/PBtx0=',
+            'undefined': '0',
+            'PasswordInput': ' dAaIbU2BmGOtFUVYm/gEM5yaZojqmtjifUJP2N+gkamNFyBqwec5ETXZFcji8orszLywEZPaJ1fQHOvZidQKhWLNtKDqBObcbrXlwgsQuX7ePqYBtP6qAc5JIQ/tfPcPYT6S0s4cCdAWGzyitt/L0jqf27XCael00UjFFLDswAU=',
+            'IsKeepLoginState': 'true',
+            'loginType': 'PC',
+        }
+
+        return scrapy.FormRequest(url='https://passport.ch.com/zh_cn/Login/DoLogin',
+                                  formdata=from_data,
+                                  callback=ChunqiuSpider.islogin)
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
